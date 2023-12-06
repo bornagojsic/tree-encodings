@@ -1,0 +1,5 @@
+networx
+numpy
+matplotlib
+pytest
+icecream
