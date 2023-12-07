@@ -29,10 +29,11 @@ class Leaves:
 			raise ValueError("The type must be either 'list' or 'set'")
 
 
-	def __init__(self, tree, root: int=0, type: str="set"):
+	def __init__(self, tree, root: int=0, type: str="list", ascending: bool=True):
 		self.check_parameters(tree, root, type)
 		
 		self.type = type
+		self.ascending = ascending
 		self.tree = tree
 		self.root = root
 
@@ -87,9 +88,21 @@ class Leaves:
 		if self.type == "set":
 			if index != 0:
 				raise ValueError("The index must be 0 for a set")
-			return self.leaves.pop()
+			
+			if self.ascending:
+				return self.leaves.pop()
+			
+			s_list = list(self.leaves)
+			result = s_list.pop(-1)
+			
+			self.leaves = set(s_list)
+			
+			return result
 		
-		return self.leaves.pop(index)
+		if self.ascending:
+			return self.leaves.pop(index)
+		
+		return self.leaves.pop(- index - 1)
 	
 	def append(self, node):
 		if node in self.leaves:
@@ -170,34 +183,38 @@ class PruferEncoding(TreeEncoding):
 
 
 class OneListEncoding(TreeEncoding):
-	def __init__(self, tree, root: int=0):
+	def __init__(self, tree, root: int=0, ascending: bool=True):
 		super().__init__(tree)
 
 		if root > len(tree):
 			raise ValueError("The root node must be in the tree")
 		
 		self.root = root
+		self.ascending = ascending
 
 		self.encoding = self.encode(self.tree, self.root)
 
-	def get_leaves(self, tree, root: int=0):
-		return Leaves(tree, root, "list")
+	def get_leaves(self, tree, root: int=0, ascending: bool|None=None):
+		return Leaves(tree, root, "list", ascending)
 	
 	def add_leaf(self, leaves: Leaves, leaf):
 		leaves.append(leaf)
 
-	def encode(self, tree, root: int=0):
+	def encode(self, tree, root: int=0, ascending: bool|None=None):
 		if (tree is None):
 			tree = self.tree
 
 		if (root is None):
 			root = self.root
 
+		if (ascending is None):
+			ascending = self.ascending
+
 		n = len(tree.nodes())
 		tree_ = copy.deepcopy(tree)
 
 		C = []
-		L = self.get_leaves(tree_, root)
+		L = self.get_leaves(tree_, root, ascending)
 		
 		for _ in range(n-2):
 			u = L.pop()
@@ -212,24 +229,50 @@ class OneListEncoding(TreeEncoding):
 		return self.parse_encoded_vertices(C)
 
 
-class OTAEncoding(OneListEncoding):
-	pass
+class OTXEncoding(OneListEncoding):
+	def __init__(self, tree, root: int=0, ascending: bool=True):
+		super().__init__(tree, root, ascending)
 
 
-class OSAEncoding(OneListEncoding):
-	def get_leaves(self, tree, root: int=0):
-		return Leaves(tree, root, "set")
+class OTAEncoding(OTXEncoding):
+	def __init__(self, tree, root: int=0):
+		super().__init__(tree, root, True)
+
+
+class OTDEncoding(OTXEncoding):
+	def __init__(self, tree, root: int=0):
+		super().__init__(tree, root, False)
+
+
+class OSXEncoding(OneListEncoding):
+	def __init__(self, tree, root: int=0, ascending: bool=True):
+		super().__init__(tree, root, ascending)
+
+	def get_leaves(self, tree, root: int=0, ascending: bool|None=None):
+		return Leaves(tree, root, "set", ascending)
 	
 	def add_leaf(self, leaves: Leaves, leaf):
 		leaves.insert(leaf)
 
 
+class OSAEncoding(OSXEncoding):
+	def __init__(self, tree, root: int=0):
+		super().__init__(tree, root, True)
+
+
+class OSDEncoding(OSXEncoding):
+	def __init__(self, tree, root: int=0):
+		super().__init__(tree, root, False)
+
+
+## FIXME: this is not working
 class OHAEncoding(OneListEncoding):
-	def get_leaves(self, tree, root: int=0):
-		return Leaves(tree, root, "list")
+	def get_leaves(self, tree, root: int=0, ascending: bool|None=None):
+		return Leaves(tree, root, "list", ascending)
 	
 	def add_leaf(self, leaves: Leaves, leaf):
 		leaves.prepend(leaf)
+
 
 
 def get_leaf_parent(tree, leaf):
@@ -265,6 +308,9 @@ def main():
 	print("OHA8  :", OHAEncoding(T, 7).encoding)
 	print("OTA8  :", OTAEncoding(T, 7).encoding)
 	print("OSA8  :", OSAEncoding(T, 7).encoding)
+	# print("OHD8  :", OHDEncoding(T, 7).encoding)
+	print("OTD8  :", OTDEncoding(T, 7).encoding)
+	# print("OSD8  :", OSDEncoding(T, 7).encoding)
 
 
 if __name__ == '__main__':
