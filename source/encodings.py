@@ -168,6 +168,9 @@ class TreeEncoding:
 
 	def parse_encoded_vertices(self, encoding):
 		return [self.reverse_vertices_mapping[vertex] for vertex in encoding]
+	
+	def __str__(self):
+		return str(self.encoding)
 		
 
 
@@ -192,29 +195,20 @@ class OneListEncoding(TreeEncoding):
 		self.root = root
 		self.ascending = ascending
 
-		self.encoding = self.encode(self.tree, self.root)
+		self.encoding = self.encode()
 
-	def get_leaves(self, tree, root: int=0, ascending: bool|None=None):
-		return Leaves(tree, root, "list", ascending)
+	def get_leaves(self, tree):
+		return Leaves(tree, self.root, "list", self.ascending)
 	
 	def add_leaf(self, leaves: Leaves, leaf):
 		leaves.append(leaf)
 
-	def encode(self, tree, root: int=0, ascending: bool|None=None):
-		if (tree is None):
-			tree = self.tree
-
-		if (root is None):
-			root = self.root
-
-		if (ascending is None):
-			ascending = self.ascending
-
-		n = len(tree.nodes())
-		tree_ = copy.deepcopy(tree)
+	def encode(self):
+		n = len(self.tree.nodes())
+		tree_ = copy.deepcopy(self.tree)
 
 		C = []
-		L = self.get_leaves(tree_, root, ascending)
+		L = self.get_leaves(tree_)
 		
 		for _ in range(n-2):
 			u = L.pop()
@@ -223,7 +217,7 @@ class OneListEncoding(TreeEncoding):
 			C.append(v) # add v to the encoding
 			tree_.remove_node(u)
 			
-			if tree_.degree(v) == 1 and v != root:
+			if tree_.degree(v) == 1 and v != self.root:
 				self.add_leaf(L, v)
 		
 		return self.parse_encoded_vertices(C)
@@ -248,8 +242,8 @@ class OSXEncoding(OneListEncoding):
 	def __init__(self, tree, root: int=0, ascending: bool=True):
 		super().__init__(tree, root, ascending)
 
-	def get_leaves(self, tree, root: int=0, ascending: bool|None=None):
-		return Leaves(tree, root, "set", ascending)
+	def get_leaves(self, tree):
+		return Leaves(tree, self.root, "set", self.ascending)
 	
 	def add_leaf(self, leaves: Leaves, leaf):
 		leaves.insert(leaf)
@@ -259,16 +253,25 @@ class OSAEncoding(OSXEncoding):
 	def __init__(self, tree, root: int=0):
 		super().__init__(tree, root, True)
 
-
+# BUG: this is causing an KeyError
 class OSDEncoding(OSXEncoding):
 	def __init__(self, tree, root: int=0):
 		super().__init__(tree, root, False)
 
 
+class OHXEncoding(OneListEncoding):
+	def __init__(self, tree, root: int=0, ascending: bool=True):
+		super().__init__(tree, root, ascending)
+
+
+
 ## FIXME: this is not working
 class OHAEncoding(OneListEncoding):
-	def get_leaves(self, tree, root: int=0, ascending: bool|None=None):
-		return Leaves(tree, root, "list", ascending)
+	def __init__(self, tree, root: int=0):
+		super().__init__(tree, root, True)
+
+	def get_leaves(self, tree):
+		return Leaves(tree, self.root, "list", True)
 	
 	def add_leaf(self, leaves: Leaves, leaf):
 		leaves.prepend(leaf)
@@ -297,20 +300,20 @@ def main():
 	print(T.nodes())
 	print(T.edges())
 	
-	pos = nx.spring_layout(T)
-	nx.draw(T, pos, with_labels=True, node_color="skyblue", font_color="black", font_weight="bold", edge_color="gray", linewidths=1, alpha=0.7)
-	plt.show()
+	# pos = nx.spring_layout(T)
+	# nx.draw(T, pos, with_labels=True, node_color="skyblue", font_color="black", font_weight="bold", edge_color="gray", linewidths=1, alpha=0.7)
+	# plt.show()
 	
-	print("Prufer:", PruferEncoding(T).encoding)
-	print("OHA0  :", OHAEncoding(T).encoding)
-	print("OTA0  :", OTAEncoding(T).encoding)
-	print("OSA0  :", OSAEncoding(T).encoding)
-	print("OHA8  :", OHAEncoding(T, 7).encoding)
-	print("OTA8  :", OTAEncoding(T, 7).encoding)
-	print("OSA8  :", OSAEncoding(T, 7).encoding)
-	# print("OHD8  :", OHDEncoding(T, 7).encoding)
-	print("OTD8  :", OTDEncoding(T, 7).encoding)
-	# print("OSD8  :", OSDEncoding(T, 7).encoding)
+	# print("Prufer:", PruferEncoding(T))
+	# print("OHA0  :", OHAEncoding(T))
+	# print("OTA0  :", OTAEncoding(T))
+	# print("OSA0  :", OSAEncoding(T))
+	print("OHA8  :", OHAEncoding(T, 7))
+	print("OTA8  :", OTAEncoding(T, 7))
+	print("OSA8  :", OSAEncoding(T, 7))
+	# print("OHD8  :", OHDEncoding(T, 7))
+	print("OTD8  :", OTDEncoding(T, 7))
+	# print("OSD8  :", OSDEncoding(T, 7))
 
 
 if __name__ == '__main__':
